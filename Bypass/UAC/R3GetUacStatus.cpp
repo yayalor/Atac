@@ -1,10 +1,12 @@
 #include <windows.h>
 #include <stdio.h>
+using namespace std;
 
-typedef NTSTATUS(CALLBACK *LPFNDLLCHECKUAC)(DWORD* pflag);
 
-void main()
+DWORD GetCurrentUacStatus()
 {
+	typedef NTSTATUS(CALLBACK *LPFNDLLCHECKUAC)(DWORD* pflag);
+
 	HMODULE hModule = LoadLibraryA("ntdll");
 	if (hModule)
 	{
@@ -18,8 +20,7 @@ void main()
 			// handle the error
 			DWORD LastError = GetLastError();
 			FreeLibrary(hModule);
-
-			printf("GetProcAddress fail,lastError: %d", LastError);
+			return LastError;
 
 		}
 		else
@@ -33,30 +34,49 @@ void main()
 				ELEVATION_INSTALLER_DETECTION_ENABLED(0x4)
 					Install and setup programs are detected and automatically elevated
 			*/
-
-			// call the RtlQueryElevationFlags
+			// call the function
 			NTSTATUS state = lpfndllcheckuac(&UACFlag);
 			if (state >= 0)
 			{
 				if (UACFlag & 0x1)
 				{
-					printf("UAC enabled");
+					return TRUE;
 				}
 				else
 				{
-					printf("UAC disabled");
+					return FALSE;
 				}
 				
 			}
 			else
 			{
-				// handle the error
+
 				DWORD LastError = GetLastError();
-				printf("RtlQueryElevationFlags error: %d", LastError);
+				return LastError;
 			}
-			
 			
 		}
 
+	}
+}
+
+
+void main()
+{
+	DWORD uacFlag = GetCurrentUacStatus();
+	if (uacFlag > 1)
+	{
+		printf("lasterror: %d", uacFlag);
+	}
+	else
+	{
+		if (uacFlag)
+		{
+			printf("UAC enabled");
+		}
+		else
+		{
+			printf("UAC disabled");
+		}
 	}
 }
